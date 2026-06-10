@@ -27,7 +27,7 @@ final class ConsoleTableTest extends TestCase
         return implode("\r\n", $lines) . "\r\n";
     }
 
-    public function testFromArray(): void
+    public function testFromRows(): void
     {
         $expected = self::table(
             '+----+------------------+-------+',
@@ -39,37 +39,37 @@ final class ConsoleTableTest extends TestCase
             '+----+------------------+-------+',
         );
 
-        self::assertSame($expected, ConsoleTable::fromArray(self::SAMPLE));
+        self::assertSame($expected, ConsoleTable::fromRows(self::SAMPLE));
     }
 
-    public function testFromArrayOfObjects(): void
+    public function testFromRowsOfObjects(): void
     {
         $objects = array_map(static fn(array $row): object => (object)$row, self::SAMPLE);
 
-        self::assertSame(ConsoleTable::fromArray(self::SAMPLE), ConsoleTable::fromArray($objects));
+        self::assertSame(ConsoleTable::fromRows(self::SAMPLE), ConsoleTable::fromRows($objects));
     }
 
-    public function testFromArrayEmpty(): void
+    public function testFromRowsEmpty(): void
     {
-        self::assertSame('', ConsoleTable::fromArray([]));
+        self::assertSame('', ConsoleTable::fromRows([]));
     }
 
-    public function testFromArrayReturnObject(): void
+    public function testFromRowsReturnObject(): void
     {
-        $table = ConsoleTable::fromArray(self::SAMPLE, true);
+        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
 
         self::assertInstanceOf(ConsoleTable::class, $table);
-        self::assertSame(ConsoleTable::fromArray(self::SAMPLE), $table->getTable());
+        self::assertSame(ConsoleTable::fromRows(self::SAMPLE), $table->getTable());
     }
 
     public function testToString(): void
     {
-        $table = ConsoleTable::fromArray(self::SAMPLE, true);
+        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
 
-        self::assertSame($table->getTable(), (string)ConsoleTable::fromArray(self::SAMPLE, true));
+        self::assertSame($table->getTable(), (string)ConsoleTable::fromRows(self::SAMPLE, returnObject: true));
     }
 
-    public function testFromKeyTitleArray(): void
+    public function testFromMap(): void
     {
         $expected = self::table(
             '+-------+-----------+',
@@ -80,10 +80,10 @@ final class ConsoleTableTest extends TestCase
             '+-------+-----------+',
         );
 
-        self::assertSame($expected, ConsoleTable::fromKeyTitleArray(['host' => 'localhost', 'порт' => 3306]));
+        self::assertSame($expected, ConsoleTable::fromMap(['host' => 'localhost', 'порт' => 3306]));
     }
 
-    public function testFrom2dArray(): void
+    public function testFromRowsWithExplicitHeaders(): void
     {
         $expected = self::table(
             '+---+---+',
@@ -94,12 +94,12 @@ final class ConsoleTableTest extends TestCase
             '+---+---+',
         );
 
-        self::assertSame($expected, ConsoleTable::from2dArray(['a', 'b'], [[1, 2], [3, 4]]));
+        self::assertSame($expected, ConsoleTable::fromRows([[1, 2], [3, 4]], ['a', 'b']));
     }
 
     public function testSetAlign(): void
     {
-        $table = ConsoleTable::fromArray(self::SAMPLE, true);
+        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
         $table->setAlign(1, Align::Right);
         $table->setAlign(2, Align::Center);
 
@@ -291,7 +291,7 @@ final class ConsoleTableTest extends TestCase
 
     public function testFilterPrependAndInsert(): void
     {
-        $table = ConsoleTable::fromArray([['a' => 1, 'b' => 22]], true);
+        $table = ConsoleTable::fromRows([['a' => 1, 'b' => 22]], returnObject: true);
         $table->addFilter(0, static fn($value): string => "[$value]");
         $table->addRow([0, 'first'], false);
         $table->insertRow([9, 'ins'], 1);

@@ -115,55 +115,41 @@ final class ConsoleTable implements Stringable
     }
 
     /**
-     * Строит таблицу `title | value` из плоского массива key => value.
+     * Строит таблицу из списка однотипных записей (массивов или объектов).
+     * Заголовки — $headers, а если не заданы — ключи первой записи.
      *
      * @return ($returnObject is true ? self : string)
      */
-    public static function fromKeyTitleArray(array $data, bool $returnObject = false): self|string
+    public static function fromRows(array $rows, ?array $headers = null, bool $returnObject = false): self|string
+    {
+        $table = new self();
+
+        if ($headers !== null) {
+            $table->setHeaders($headers);
+        } elseif ($rows !== []) {
+            $table->setHeaders(array_keys((array)reset($rows)));
+        }
+
+        foreach ($rows as $row) {
+            $table->addRow((array)$row);
+        }
+
+        return $returnObject ? $table : $table->getTable();
+    }
+
+    /**
+     * Строит двухколоночную таблицу `title | value` из плоского массива key => value.
+     *
+     * @return ($returnObject is true ? self : string)
+     */
+    public static function fromMap(array $map, bool $returnObject = false): self|string
     {
         $rows = [];
-        foreach ($data as $key => $value) {
+        foreach ($map as $key => $value) {
             $rows[] = ['title' => $key, 'value' => $value];
         }
 
-        return self::fromArray($rows, $returnObject);
-    }
-
-    /**
-     * Строит таблицу из массива однотипных массивов/объектов;
-     * заголовки берутся из ключей первого элемента.
-     *
-     * @return ($returnObject is true ? self : string)
-     */
-    public static function fromArray(array $data, bool $returnObject = false): self|string
-    {
-        $table = new self();
-
-        if ($data !== []) {
-            $table->setHeaders(array_keys((array)reset($data)));
-            foreach ($data as $item) {
-                $table->addRow((array)$item);
-            }
-        }
-
-        return $returnObject ? $table : $table->getTable();
-    }
-
-    /**
-     * Строит таблицу из заголовков и двумерного массива данных.
-     *
-     * @return ($returnObject is true ? self : string)
-     */
-    public static function from2dArray(array $headers, array $data, bool $returnObject = false): self|string
-    {
-        $table = new self();
-        $table->setHeaders($headers);
-
-        foreach ($data as $row) {
-            $table->addRow($row);
-        }
-
-        return $returnObject ? $table : $table->getTable();
+        return self::fromRows($rows, returnObject: $returnObject);
     }
 
     /**
