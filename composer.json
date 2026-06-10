@@ -1,0 +1,44 @@
+{
+  "name": "entelisteam/lbaf-consoletable",
+  "description": "ASCII table renderer for CLI output from LBAF",
+  "type": "library",
+  "license": "MIT",
+  "keywords": [
+    "console", "cli", "table", "ascii"
+  ],
+  "authors": [
+    {
+      "name": "ENTELISTEAM INC",
+      "email": "welcome@entelis.team",
+      "homepage": "https://entelis.team"
+    }
+  ],
+  "require": {
+    "php": "~8.2",
+    "ext-mbstring": "*"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^12.0",
+    "entelisteam/lbaf-rector": "^1.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "EntelisTeam\\Lbaf\\ConsoleTable\\": "src/",
+      "EntelisTeam\\Lbaf\\ConsoleTable\\Rector\\": "rector/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "EntelisTeam\\Lbaf\\ConsoleTable\\Tests\\": "tests/"
+    }
+  },
+  "extra": {
+    "lbaf-rector-migrations": "EntelisTeam\\Lbaf\\ConsoleTable\\Rector\\MigrationList"
+  },
+  "scripts": {
+    "test": "vendor/bin/phpunit --display-warnings",
+    "rector:check": "vendor/bin/rector process --dry-run",
+    "rector:fix": "vendor/bin/rector process"
+  },
+  "minimum-stability": "stable"
+}
