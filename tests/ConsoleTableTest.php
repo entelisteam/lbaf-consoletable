@@ -4,15 +4,12 @@ declare(strict_types=1);
 
 namespace EntelisTeam\Lbaf\ConsoleTable\Tests;
 
-use EntelisTeam\Lbaf\ConsoleTable\Align;
 use EntelisTeam\Lbaf\ConsoleTable\ConsoleTable;
 use PHPUnit\Framework\TestCase;
 
 /**
- * Характеризационные тесты: эталонный вывод зафиксирован по оригинальному
- * Lbaf\Helper\ConsoleTable (сценарии, работавшие на PHP 8.2) и по новой
- * реализации (сценарии, падавшие в оригинале на PHP 8: разделители,
- * итоги, многострочные ячейки, addCol/addData).
+ * Характеризационные тесты рендеринга: эталонный вывод зафиксирован
+ * по оригинальному Lbaf\Helper\ConsoleTable.
  */
 final class ConsoleTableTest extends TestCase
 {
@@ -54,19 +51,9 @@ final class ConsoleTableTest extends TestCase
         self::assertSame('', ConsoleTable::fromRows([]));
     }
 
-    public function testFromRowsReturnObject(): void
+    public function testFromRowsEmptyWithHeaders(): void
     {
-        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
-
-        self::assertInstanceOf(ConsoleTable::class, $table);
-        self::assertSame(ConsoleTable::fromRows(self::SAMPLE), $table->getTable());
-    }
-
-    public function testToString(): void
-    {
-        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
-
-        self::assertSame($table->getTable(), (string)ConsoleTable::fromRows(self::SAMPLE, returnObject: true));
+        self::assertSame('', ConsoleTable::fromRows([], ['a', 'b']));
     }
 
     public function testFromMap(): void
@@ -83,6 +70,11 @@ final class ConsoleTableTest extends TestCase
         self::assertSame($expected, ConsoleTable::fromMap(['host' => 'localhost', 'порт' => 3306]));
     }
 
+    public function testFromMapEmpty(): void
+    {
+        self::assertSame('', ConsoleTable::fromMap([]));
+    }
+
     public function testFromRowsWithExplicitHeaders(): void
     {
         $expected = self::table(
@@ -97,62 +89,25 @@ final class ConsoleTableTest extends TestCase
         self::assertSame($expected, ConsoleTable::fromRows([[1, 2], [3, 4]], ['a', 'b']));
     }
 
-    public function testSetAlign(): void
+    public function testHeadersShorterThanRowsAreFilled(): void
     {
-        $table = ConsoleTable::fromRows(self::SAMPLE, returnObject: true);
-        $table->setAlign(1, Align::Right);
-        $table->setAlign(2, Align::Center);
-
         $expected = self::table(
-            '+----+------------------+-------+',
-            '| id |             name | time  |',
-            '+----+------------------+-------+',
-            '| 1  |              foo | 0.123 |',
-            '| 2  | длинное значение | 12.5  |',
-            '| 3  |              bar |   0   |',
-            '+----+------------------+-------+',
+            '+---+---+---+',
+            '| a | b |   |',
+            '+---+---+---+',
+            '| 1 | 2 | 3 |',
+            '+---+---+---+',
         );
 
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testCustomBorderAndPadding(): void
-    {
-        $table = new ConsoleTable(Align::Left, '*', 2);
-        $table->setHeaders(['id', 'name']);
-        $table->addRow([1, 'foo']);
-
-        $expected = self::table(
-            '*****************',
-            '*  id  *  name  *',
-            '*****************',
-            '*  1   *  foo   *',
-            '*****************',
-        );
-
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testNoBorder(): void
-    {
-        $table = new ConsoleTable(Align::Left, '');
-        $table->setHeaders(['id', 'name']);
-        $table->addRow([1, 'foo']);
-
-        $expected = self::table(
-            ' id  name ',
-            ' 1   foo  ',
-        );
-
-        self::assertSame($expected, $table->getTable());
+        self::assertSame($expected, ConsoleTable::fromRows([[1, 2, 3]], ['a', 'b']));
     }
 
     public function testAnsiCodesDoNotAffectWidth(): void
     {
-        $table = new ConsoleTable();
-        $table->setHeaders(['name', 'status']);
-        $table->addRow(['job', "\033[32mOK\033[0m"]);
-        $table->addRow(['other', 'FAILED']);
+        $rows = [
+            ['name' => 'job', 'status' => "\033[32mOK\033[0m"],
+            ['name' => 'other', 'status' => 'FAILED'],
+        ];
 
         $expected = self::table(
             '+-------+--------+',
@@ -163,16 +118,11 @@ final class ConsoleTableTest extends TestCase
             '+-------+--------+',
         );
 
-        self::assertSame($expected, $table->getTable());
+        self::assertSame($expected, ConsoleTable::fromRows($rows));
     }
 
     public function testRaggedRowsAreFilled(): void
     {
-        $table = new ConsoleTable();
-        $table->setHeaders(['a', 'b', 'c']);
-        $table->addRow([1]);
-        $table->addRow([1, 2, 3]);
-
         $expected = self::table(
             '+---+---+---+',
             '| a | b | c |',
@@ -182,15 +132,15 @@ final class ConsoleTableTest extends TestCase
             '+---+---+---+',
         );
 
-        self::assertSame($expected, $table->getTable());
+        self::assertSame($expected, ConsoleTable::fromRows([[1], [1, 2, 3]], ['a', 'b', 'c']));
     }
 
     public function testMultilineCellsAndHeaders(): void
     {
-        $table = new ConsoleTable();
-        $table->setHeaders(['id', "multi\nheader"]);
-        $table->addRow([1, "line1\nline2\nline3"]);
-        $table->addRow([2, 'single']);
+        $rows = [
+            [1, "line1\nline2\nline3"],
+            [2, 'single'],
+        ];
 
         $expected = self::table(
             '+----+--------+',
@@ -204,108 +154,6 @@ final class ConsoleTableTest extends TestCase
             '+----+--------+',
         );
 
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testAddSeparator(): void
-    {
-        $table = new ConsoleTable();
-        $table->setHeaders(['a', 'b']);
-        $table->addRow([1, 2]);
-        $table->addSeparator();
-        $table->addRow([3, 4]);
-
-        $expected = self::table(
-            '+---+---+',
-            '| a | b |',
-            '+---+---+',
-            '| 1 | 2 |',
-            '+---+---+',
-            '| 3 | 4 |',
-            '+---+---+',
-        );
-
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testCalculateTotals(): void
-    {
-        $table = new ConsoleTable();
-        $table->setHeaders(['name', 'count']);
-        $table->addRow(['x', 2]);
-        $table->addRow(['y', 3.5]);
-        $table->calculateTotalsFor([1]);
-
-        $expected = self::table(
-            '+------+-------+',
-            '| name | count |',
-            '+------+-------+',
-            '| x    | 2     |',
-            '| y    | 3.5   |',
-            '+------+-------+',
-            '|      | 5.5   |',
-            '+------+-------+',
-        );
-
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testAddDataWithHorizontalRule(): void
-    {
-        $table = new ConsoleTable();
-        $table->setHeaders(['a', 'b', 'c']);
-        $table->addData([[1, 2], ConsoleTable::HORIZONTAL_RULE, [3, 4]]);
-
-        $expected = self::table(
-            '+---+---+---+',
-            '| a | b | c |',
-            '+---+---+---+',
-            '| 1 | 2 |   |',
-            '+---+---+---+',
-            '| 3 | 4 |   |',
-            '+---+---+---+',
-        );
-
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testAddCol(): void
-    {
-        $table = new ConsoleTable();
-        $table->setHeaders(['a', 'b', 'c']);
-        $table->addRow([1, 2]);
-        $table->addRow([3, 4]);
-        $table->addCol(['x', 'y'], 2);
-
-        $expected = self::table(
-            '+---+---+---+',
-            '| a | b | c |',
-            '+---+---+---+',
-            '| 1 | 2 | x |',
-            '| 3 | 4 | y |',
-            '+---+---+---+',
-        );
-
-        self::assertSame($expected, $table->getTable());
-    }
-
-    public function testFilterPrependAndInsert(): void
-    {
-        $table = ConsoleTable::fromRows([['a' => 1, 'b' => 22]], returnObject: true);
-        $table->addFilter(0, static fn($value): string => "[$value]");
-        $table->addRow([0, 'first'], false);
-        $table->insertRow([9, 'ins'], 1);
-
-        $expected = self::table(
-            '+-----+-------+',
-            '| a   | b     |',
-            '+-----+-------+',
-            '| [0] | first |',
-            '| [9] | ins   |',
-            '| [1] | 22    |',
-            '+-----+-------+',
-        );
-
-        self::assertSame($expected, $table->getTable());
+        self::assertSame($expected, ConsoleTable::fromRows($rows, ['id', "multi\nheader"]));
     }
 }

@@ -1,11 +1,11 @@
 # entelisteam/lbaf-consoletable
 
-Рендер ASCII-таблиц для вывода в консоль. Форк PEAR `Console_Table`, переработанный под PHP 8.2 и выделенный из фреймворка LBAF (бывший `Lbaf\Helper\ConsoleTable`).
+Рендер ASCII-таблиц для вывода в консоль. Выделен из фреймворка LBAF (бывший `Lbaf\Helper\ConsoleTable`); формат вывода совместим с PEAR `Console_Table`, реализация написана с нуля.
 
 - multibyte-safe (UTF-8, кириллица — ширина колонок считается корректно);
 - ANSI-коды цвета не учитываются в ширине ячеек;
 - многострочные ячейки и заголовки;
-- выравнивание, фильтры колонок, строки итогов, разделители.
+- недостающие ячейки коротких строк дозаполняются пустыми.
 
 ## Установка
 
@@ -15,7 +15,7 @@ composer require entelisteam/lbaf-consoletable
 
 Требования: PHP ~8.2, ext-mbstring.
 
-## Быстрый старт
+## Использование
 
 ### Таблица из списка записей — `fromRows()`
 
@@ -62,67 +62,7 @@ echo ConsoleTable::fromMap(['host' => 'localhost', 'port' => 3306]);
 +-------+-----------+
 ```
 
-### Донастройка таблицы
-
-Обе фабрики принимают последним аргументом `bool $returnObject` — при `true` возвращается объект `ConsoleTable` вместо готовой строки:
-
-```php
-use EntelisTeam\Lbaf\ConsoleTable\Align;
-use EntelisTeam\Lbaf\ConsoleTable\ConsoleTable;
-
-$table = ConsoleTable::fromRows($rows, returnObject: true);
-$table->setAlign(2, Align::Right);
-echo $table->getTable(); // или просто echo $table — есть __toString()
-```
-
-## Объектный API
-
-```php
-use EntelisTeam\Lbaf\ConsoleTable\Align;
-use EntelisTeam\Lbaf\ConsoleTable\ConsoleTable;
-
-$table = new ConsoleTable(
-    align: Align::Left,                    // выравнивание по умолчанию
-    border: ConsoleTable::BORDER_ASCII,    // или свой символ рамки, '' — без рамки
-    padding: 1,                            // пробелы вокруг содержимого ячейки
-    charset: 'utf-8',
-);
-
-$table->setHeaders(['name', 'count']);
-$table->addRow(['x', 2]);
-$table->addRow(['y', 3.5]);
-$table->addSeparator();                    // горизонтальный разделитель
-$table->addRow(['z', 1]);
-
-$table->setAlign(1, Align::Right);         // выравнивание конкретной колонки
-$table->addFilter(0, strtoupper(...));     // callback к каждой ячейке колонки (заголовки не затрагивает)
-$table->calculateTotalsFor([1]);           // строка итогов по колонке 1
-
-echo $table->getTable();
-```
-
-```
-+------+-------+
-| name | count |
-+------+-------+
-| X    |     2 |
-| Y    |   3.5 |
-+------+-------+
-| Z    |     1 |
-+------+-------+
-|      |   6.5 |
-+------+-------+
-```
-
-Прочие методы:
-
-- `addRow(array $row, bool $append = true)` — `false` добавляет строку в начало;
-- `insertRow(array $row, int $rowId = 0)` — вставка перед строкой `$rowId`;
-- `addCol(array $colData, int $colId = 0, int $rowId = 0)` — добавить колонку;
-- `addData(array $data, int $colId = 0, int $rowId = 0)` — добавить двумерный массив; элемент `ConsoleTable::HORIZONTAL_RULE` вместо строки вставляет разделитель;
-- `setCharset(string $charset)` — кодировка данных (по умолчанию `utf-8`).
-
-Многострочные ячейки (`\n` внутри значения) автоматически разбиваются на несколько строк таблицы.
+Обе фабрики возвращают готовую строку — это весь публичный API.
 
 ## Миграция с `Lbaf\Helper\ConsoleTable`
 
@@ -131,8 +71,8 @@ echo $table->getTable();
 | Миграция | Что делает |
 |---|---|
 | `Migration_..._ConsoleTableSplit` | `Lbaf\Helper\ConsoleTable` → `EntelisTeam\Lbaf\ConsoleTable\ConsoleTable` |
-| `Migration_..._ConsoleTableAlignEnum` | константы `ConsoleTable::ALIGN_*` → enum `Align::Left/Center/Right` |
 | `Migration_..._ConsoleTableFactoryMethods` | `fromArray()` → `fromRows()`, `from2dArray($h, $d)` → `fromRows($d, $h)`, `fromKeyTitleArray()` → `fromMap()` |
+| `Migration_..._ConsoleTableRemoveReturnObject` | помечает TODO-комментарием вызовы, передававшие `$returnObject` — параметр удалён, нужен ручной рефакторинг |
 
 В downstream-проекте:
 
@@ -142,14 +82,13 @@ vendor/bin/rector process --dry-run   # посмотреть изменения
 vendor/bin/rector process             # применить
 ```
 
-Не мигрируются автоматически (нужно править руками):
+**Внимание:** объектный API оригинала (`setHeaders`/`addRow`/`setAlign`/`getTable` и т.д.) в пакете отсутствует — миграции покрывают только вызовы фабрик. Код, использующий объектный API, нужно переводить на `fromRows()`/`fromMap()` вручную.
 
-- выравнивание «сырым» числом вместо констант: `setAlign(0, 1)`;
-- first-class callable (`ConsoleTable::fromArray(...)`) и spread-аргументы (`...$args`).
+Также не мигрируются автоматически first-class callable (`ConsoleTable::fromArray(...)`) и spread-аргументы (`...$args`).
 
 ## Отличия от оригинала
 
-Поведение рендеринга сохранено 1:1, но исправлены фаталы оригинала на PHP 8: `addSeparator()`, `calculateTotalsFor()`, `addCol()`, `addData()` и многострочные ячейки падали с `TypeError` (`count(null)` / `count(int)`).
+Публичный API сокращён до фабрик `fromRows()`/`fromMap()`, возвращающих строку; формат вывода для этих сценариев сохранён 1:1.
 
 ## Разработка
 

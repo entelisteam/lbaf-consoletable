@@ -8,13 +8,9 @@ class Report
 {
     public function run(array $rows, array $map): void
     {
-        $table = new ConsoleTable(ConsoleTable::ALIGN_RIGHT);
-        $table->setAlign(1, \Lbaf\Helper\ConsoleTable::ALIGN_CENTER);
-        echo $table->getTable();
-
         echo ConsoleTable::fromArray($rows);
         echo ConsoleTable::from2dArray(['id', 'name'], $rows);
-        echo ConsoleTable::fromKeyTitleArray($map, true)->getTable();
+        echo ConsoleTable::fromKeyTitleArray($map, true);
     }
 }
 
@@ -24,19 +20,14 @@ class Report
 namespace App\Fixture;
 
 use EntelisTeam\Lbaf\ConsoleTable\ConsoleTable;
-use EntelisTeam\Lbaf\ConsoleTable\Align;
 
 class Report
 {
     public function run(array $rows, array $map): void
     {
-        $table = new ConsoleTable(Align::Right);
-        $table->setAlign(1, Align::Center);
-        echo $table->getTable();
-
         echo ConsoleTable::fromRows($rows);
         echo ConsoleTable::fromRows($rows, ['id', 'name']);
-        echo ConsoleTable::fromMap($map, true)->getTable();
+        // TODO(lbaf-consoletable): параметр $returnObject удалён, fromRows()/fromMap() всегда возвращают строку — перепишите вызов вручную
+        echo ConsoleTable::fromMap($map, true);
     }
 }
-

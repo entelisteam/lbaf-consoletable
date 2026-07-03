@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace EntelisTeam\Lbaf\ConsoleTable\Rector;
 
 use EntelisTeam\Lbaf\ConsoleTable\Rector\Migration\Migration_20260610_1200_ConsoleTableSplit;
-use EntelisTeam\Lbaf\ConsoleTable\Rector\Migration\Migration_20260610_1211_ConsoleTableAlignEnum;
 use EntelisTeam\Lbaf\ConsoleTable\Rector\Migration\Migration_20260610_1220_ConsoleTableFactoryMethods;
+use EntelisTeam\Lbaf\ConsoleTable\Rector\Migration\Migration_20260703_1400_ConsoleTableRemoveReturnObject;
 use EntelisTeam\Lbaf\Rector\RectorMigrationListInterface;
 
 /**
@@ -21,8 +21,8 @@ final class MigrationList implements RectorMigrationListInterface
     {
         return [
             Migration_20260610_1200_ConsoleTableSplit::class,
-            Migration_20260610_1211_ConsoleTableAlignEnum::class,
             Migration_20260610_1220_ConsoleTableFactoryMethods::class,
+            Migration_20260703_1400_ConsoleTableRemoveReturnObject::class,
         ];
     }
 }

@@ -9,11 +9,10 @@ use PHPUnit\Framework\Attributes\DataProvider;
 use Rector\Testing\PHPUnit\AbstractRectorTestCase;
 
 /**
- * Сквозной тест всех миграций пакета из MigrationList:
- * downstream-код на старом Lbaf\Helper\ConsoleTable переводится
- * на новый класс и новые фабрики за один прогон.
+ * Тесты миграции удалённого параметра $returnObject:
+ * вызовы, передававшие его, помечаются TODO-комментарием.
  */
-final class ConsoleTableFullMigrationTest extends AbstractRectorTestCase
+final class ConsoleTableReturnObjectMigrationTest extends AbstractRectorTestCase
 {
     #[DataProvider('provideData')]
     public function test(string $filePath): void
@@ -23,11 +22,11 @@ final class ConsoleTableFullMigrationTest extends AbstractRectorTestCase
 
     public static function provideData(): Iterator
     {
-        return self::yieldFilesFromDirectory(__DIR__ . '/Fixture/FullMigration');
+        return self::yieldFilesFromDirectory(__DIR__ . '/Fixture/ReturnObject');
     }
 
     public function provideConfigFilePath(): string
     {
-        return __DIR__ . '/config/full_migration.php';
+        return __DIR__ . '/config/return_object.php';
     }
 }
